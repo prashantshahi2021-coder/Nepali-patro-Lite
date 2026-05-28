@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_strings.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -15,27 +17,31 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppSettingsScope.stringsOf(context);
     final today = repository.today();
     if (today == null) {
       final bs = repository.dateService.fromAd(DateTime.now());
       return ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
         children: [
-          const Text(
+          Text(
             'Nepali Patro Lite',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            style: AppTextStyles.title(context).copyWith(fontSize: 22),
           ),
           const SizedBox(height: 2),
-          const Text(
+          Text(
             'Simple Nepali Calendar',
-            style: TextStyle(color: Colors.black54),
+            style: AppTextStyles.subtitle(context),
           ),
           const SizedBox(height: 20),
           RedHeaderCard(
             children: [
-              const Text(
-                'Calendar data needs update',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              Text(
+                strings.calendarDataNeedsUpdate,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -50,7 +56,7 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const AppCard(child: Text('Data not available for this date')),
+          AppCard(child: Text(strings.noEventAdded)),
         ],
       );
     }
@@ -60,18 +66,20 @@ class HomeScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Nepali Patro Lite',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                    style: AppTextStyles.title(
+                      context,
+                    ).copyWith(fontSize: 22, fontWeight: FontWeight.w700),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Simple Nepali Calendar',
-                    style: TextStyle(color: Colors.black54),
+                    style: AppTextStyles.subtitle(context),
                   ),
                 ],
               ),
@@ -109,7 +117,9 @@ class HomeScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         AppCard(
-          color: const Color(0xFFFFF1F2),
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark ? 0.24 : 0.5,
+          ),
           child: Row(
             children: [
               Icon(
@@ -125,18 +135,17 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       today.eventName ??
                           today.holidayName ??
-                          'Data not available for this date',
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
+                          strings.noEventAdded,
+                      style: AppTextStyles.body(
+                        context,
+                      ).copyWith(fontSize: 17, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       today.isHoliday
                           ? 'Holiday'
                           : 'No verified holiday data available',
-                      style: const TextStyle(color: Colors.black54),
+                      style: AppTextStyles.subtitle(context),
                     ),
                   ],
                 ),
@@ -155,19 +164,19 @@ class HomeScreen extends StatelessWidget {
           children: [
             _QuickButton(
               icon: Icons.calendar_month,
-              title: 'Calendar',
+              title: strings.calendar,
               subtitle: 'Monthly view',
               onTap: () => openTab(1),
             ),
             _QuickButton(
               icon: Icons.swap_horiz,
-              title: 'Date Converter',
+              title: strings.dateConverter,
               subtitle: 'AD and BS',
               onTap: () => openTab(2),
             ),
             _QuickButton(
               icon: Icons.flag,
-              title: 'Holidays',
+              title: strings.holidays,
               subtitle: 'Verified only',
               onTap: () => openTab(3),
             ),
@@ -209,13 +218,15 @@ class _QuickButton extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: AppTextStyles.body(
+              context,
+            ).copyWith(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black54),
+            style: AppTextStyles.subtitle(context),
           ),
         ],
       ),

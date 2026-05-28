@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/patro_date.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
 import 'date_detail_screen.dart';
 
@@ -44,14 +45,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   Text(
                     '${month.nepaliName} ${nepaliNumber(widget.repository.year)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: AppTextStyles.title(
+                      context,
+                    ).copyWith(fontSize: 24, fontWeight: FontWeight.w800),
                   ),
                   Text(
                     '${month.name} ${month.adStart.year}',
-                    style: const TextStyle(color: Colors.black54),
+                    style: AppTextStyles.subtitle(context),
                   ),
                 ],
               ),
@@ -132,7 +132,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         ),
                         Text(
                           date.holiday!.type,
-                          style: const TextStyle(color: Colors.black54),
+                          style: AppTextStyles.subtitle(context),
                         ),
                       ],
                     ),
@@ -169,7 +169,7 @@ class _WeekHeader extends StatelessWidget {
               child: Center(
                 child: Text(
                   label,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: AppTextStyles.caption(context).copyWith(fontSize: 12),
                 ),
               ),
             ),
@@ -192,7 +192,8 @@ class _DateCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
+    final color = scheme.primary;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -201,7 +202,9 @@ class _DateCell extends StatelessWidget {
         decoration: BoxDecoration(
           color: isToday ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.7),
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -211,7 +214,7 @@ class _DateCell extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: isToday ? Colors.white : Colors.black,
+                color: isToday ? scheme.onPrimary : scheme.onSurface,
               ),
             ),
             const SizedBox(height: 2),
@@ -219,7 +222,9 @@ class _DateCell extends StatelessWidget {
               date.adDate.day.toString(),
               style: TextStyle(
                 fontSize: 11,
-                color: isToday ? Colors.white70 : Colors.black54,
+                color: isToday
+                    ? scheme.onPrimary.withValues(alpha: 0.72)
+                    : scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 3),
@@ -228,7 +233,7 @@ class _DateCell extends StatelessWidget {
               height: 5,
               decoration: BoxDecoration(
                 color: date.isHoliday
-                    ? (isToday ? Colors.white : color)
+                    ? (isToday ? scheme.onPrimary : color)
                     : Colors.transparent,
                 shape: BoxShape.circle,
               ),
@@ -257,7 +262,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Colors.black54)),
+        Text(label, style: AppTextStyles.subtitle(context)),
       ],
     );
   }

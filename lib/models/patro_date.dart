@@ -26,40 +26,74 @@ class PatroMonth {
 
 class HolidayItem {
   const HolidayItem({
+    this.id,
     required this.bsYear,
     required this.month,
     required this.day,
     required this.title,
+    this.titleNe,
     required this.type,
     required this.source,
+    this.adDate,
+    this.appliesTo,
+    this.sourceUrl,
+    this.verified = false,
   });
 
+  final String? id;
   final int bsYear;
   final int month;
   final int day;
   final String title;
+  final String? titleNe;
   final String type;
   final String source;
+  final DateTime? adDate;
+  final String? appliesTo;
+  final String? sourceUrl;
+  final bool verified;
 
   factory HolidayItem.fromJson(Map<String, dynamic> json) {
+    final bsDate = json['bs_date'] as String?;
+    final bsParts = bsDate?.split('-').map(int.parse).toList();
     return HolidayItem(
-      bsYear: json['bs_year'] as int,
-      month: json['bs_month'] as int,
-      day: json['bs_day'] as int,
-      title: json['holiday_name'] as String,
+      id: json['id'] as String?,
+      bsYear: bsParts?[0] ?? json['bs_year'] as int,
+      month: bsParts?[1] ?? json['bs_month'] as int,
+      day: bsParts?[2] ?? json['bs_day'] as int,
+      title:
+          json['title_en'] as String? ??
+          json['holiday_name'] as String? ??
+          json['title'] as String,
+      titleNe: json['title_ne'] as String?,
       type: json['type'] as String? ?? 'Holiday',
-      source: json['source'] as String,
+      source: json['source_name'] as String? ?? json['source'] as String,
+      adDate: json['ad_date'] == null
+          ? null
+          : DateTime.parse(json['ad_date'] as String),
+      appliesTo: json['applies_to'] as String?,
+      sourceUrl: json['source_url'] as String?,
+      verified: json['verified'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'bs_year': bsYear,
       'bs_month': month,
       'bs_day': day,
+      'bs_date':
+          '$bsYear-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}',
+      'ad_date': adDate == null ? null : dateKey(adDate!),
+      'title_en': title,
+      'title_ne': titleNe,
       'holiday_name': title,
       'type': type,
-      'source': source,
+      'applies_to': appliesTo,
+      'source_name': source,
+      'source_url': sourceUrl,
+      'verified': verified,
     };
   }
 }

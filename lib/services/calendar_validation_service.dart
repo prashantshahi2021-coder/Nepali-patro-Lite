@@ -72,8 +72,35 @@ class CalendarValidationService {
       for (final holiday in entry.value) {
         final key =
             '${holiday.bsYear}-${holiday.month.toString().padLeft(2, '0')}-${holiday.day.toString().padLeft(2, '0')}';
+        final label = _holidayLabel(holiday);
         if (!calendarKeys.contains(key)) {
-          errors.add('Holiday date missing in calendar JSON: $key');
+          errors.add('Holiday date missing in calendar JSON: $key ($label)');
+        }
+
+        try {
+          final expectedAd = dateService.toAd(
+            holiday.bsYear,
+            holiday.month,
+            holiday.day,
+          );
+          if (holiday.adDate != null &&
+              dateKey(holiday.adDate!) != dateKey(expectedAd)) {
+            errors.add(
+              'Holiday AD mismatch for $key ($label): expected ${dateKey(expectedAd)}, got ${dateKey(holiday.adDate!)}',
+            );
+          }
+
+          if (holiday.adDate != null) {
+            final convertedBs = dateService.fromAd(holiday.adDate!);
+            if ((convertedBs.year, convertedBs.month, convertedBs.day) !=
+                (holiday.bsYear, holiday.month, holiday.day)) {
+              errors.add(
+                'Holiday BS mismatch for ${dateKey(holiday.adDate!)} ($label): expected $key, got ${convertedBs.key}',
+              );
+            }
+          }
+        } catch (error) {
+          errors.add('Holiday conversion failed for $key ($label): $error');
         }
       }
     }
@@ -83,5 +110,10 @@ class CalendarValidationService {
       print('Calendar validation failed:\n${errors.join('\n')}');
     }
     return CalendarValidationResult(errors);
+  }
+
+  String _holidayLabel(HolidayItem holiday) {
+    final id = holiday.id == null ? 'no-id' : holiday.id!;
+    return '$id "${holiday.title}"';
   }
 }

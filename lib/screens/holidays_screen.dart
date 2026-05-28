@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/patro_date.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
 import 'date_detail_screen.dart';
 
@@ -20,17 +21,35 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = widget.repository.holidays.where((holiday) {
-      final haystack = '${holiday.title} ${holiday.type}'.toLowerCase();
+      final haystack =
+          '${holiday.title} ${holiday.titleNe ?? ''} ${holiday.type} ${holiday.appliesTo ?? ''}'
+              .toLowerCase();
       return haystack.contains(_query.toLowerCase());
     }).toList();
+    final categories = [
+      _HolidayCategory(
+        title: 'National Holidays',
+        holidays: filtered.where((holiday) => holiday.type == 'national'),
+      ),
+      _HolidayCategory(
+        title: 'Conditional / Community Holidays',
+        holidays: filtered.where(
+          (holiday) => {'community', 'gender', 'office'}.contains(holiday.type),
+        ),
+      ),
+      _HolidayCategory(
+        title: 'Provincial Holidays',
+        holidays: filtered.where((holiday) => holiday.type == 'province'),
+      ),
+    ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Center(
+        Center(
           child: Text(
             'विदा तथा पर्व',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            style: AppTextStyles.title(context).copyWith(fontSize: 22),
           ),
         ),
         const SizedBox(height: 16),
@@ -40,7 +59,8 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
             hintText: 'पर्व / विदा खोज्नुहोस्...',
             prefixIcon: const Icon(Icons.search),
             filled: true,
-            fillColor: const Color(0xFFF6F6F6),
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            hintStyle: AppTextStyles.subtitle(context),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
@@ -48,12 +68,12 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        for (final month in widget.repository.months)
-          if (filtered.any((holiday) => holiday.month == month.number)) ...[
+        for (final category in categories)
+          if (category.holidays.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 8),
               child: Text(
-                month.nepaliName,
+                category.title,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w800,
@@ -64,12 +84,13 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
-                  for (final holiday in filtered.where(
-                    (item) => item.month == month.number,
-                  ))
+                  for (final holiday in category.sorted)
                     _HolidayTile(
                       holiday: holiday,
-                      month: month,
+                      month: widget.repository.monthForYear(
+                        holiday.bsYear,
+                        holiday.month,
+                      ),
                       onTap: () => _openHoliday(holiday),
                     ),
                 ],
@@ -78,19 +99,29 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
             const SizedBox(height: 8),
           ],
         if (filtered.isEmpty)
-          const AppCard(
+          AppCard(
             child: Text(
               'मिल्दो पर्व वा विदा भेटिएन।',
-              style: TextStyle(color: Colors.black54),
+              style: AppTextStyles.subtitle(context),
             ),
           ),
+        const SizedBox(height: 16),
+        Text(
+          'Source: Government of Nepal, Ministry of Home Affairs',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 
   void _openHoliday(HolidayItem holiday) {
     final date = widget.repository.fromBs(
-      widget.repository.year,
+      holiday.bsYear,
       holiday.month,
       holiday.day,
     );
@@ -102,6 +133,25 @@ class _HolidaysScreenState extends State<HolidaysScreen> {
       ),
     );
   }
+}
+
+class _HolidayCategory {
+  _HolidayCategory({
+    required this.title,
+    required Iterable<HolidayItem> holidays,
+  }) : holidays = holidays.toList();
+
+  final String title;
+  final List<HolidayItem> holidays;
+
+  List<HolidayItem> get sorted => [...holidays]
+    ..sort((a, b) {
+      final yearCompare = a.bsYear.compareTo(b.bsYear);
+      if (yearCompare != 0) return yearCompare;
+      final monthCompare = a.month.compareTo(b.month);
+      if (monthCompare != 0) return monthCompare;
+      return a.day.compareTo(b.day);
+    });
 }
 
 class _HolidayTile extends StatelessWidget {
@@ -131,12 +181,16 @@ class _HolidayTile extends StatelessWidget {
                 children: [
                   Text(
                     '${nepaliNumber(holiday.day)} ${month.nepaliName}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.body(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${nepaliNumber(2083)} ${month.nepaliName} ${nepaliNumber(holiday.day)}',
-                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                    style: AppTextStyles.caption(
+                      context,
+                    ).copyWith(fontSize: 12),
                   ),
                 ],
               ),
@@ -147,12 +201,27 @@ class _HolidayTile extends StatelessWidget {
                 children: [
                   Text(
                     holiday.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.body(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
+                  if (holiday.titleNe != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      holiday.titleNe!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   Text(
-                    holiday.type,
-                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                    holiday.appliesTo ?? holiday.type,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),

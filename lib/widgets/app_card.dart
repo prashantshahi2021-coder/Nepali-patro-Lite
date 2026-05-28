@@ -16,17 +16,20 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final card = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? Colors.white,
+        color: color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: theme.colorScheme.shadow.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.06,
+            ),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -55,7 +58,7 @@ class RedHeaderCard extends StatelessWidget {
       color: Theme.of(context).colorScheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       child: DefaultTextStyle(
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
         textAlign: TextAlign.center,
         child: Column(
           mainAxisSize: MainAxisSize.min,

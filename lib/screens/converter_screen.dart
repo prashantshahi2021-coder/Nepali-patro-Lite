@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/patro_date.dart';
+import '../services/nepali_date_service.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
 
 class ConverterScreen extends StatefulWidget {
@@ -14,214 +17,265 @@ class ConverterScreen extends StatefulWidget {
 }
 
 class _ConverterScreenState extends State<ConverterScreen> {
-  bool _bsToAd = true;
-  int _bsMonth = 2;
-  int _bsDay = 15;
-  final _adYear = TextEditingController(text: '2026');
-  final _adMonth = TextEditingController(text: '5');
-  final _adDay = TextEditingController(text: '29');
-  PatroDate? _result;
+  final _dateService = NepaliDateService();
+  bool _adToBs = true;
+  DateTime? _adDate = DateTime.now();
+  int _bsYear = 2083;
+  int _bsMonth = 1;
+  int _bsDay = 1;
+  DateConversionResult? _result;
   String? _message;
 
   @override
-  void dispose() {
-    _adYear.dispose();
-    _adMonth.dispose();
-    _adDay.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    final bs = _dateService.fromAd(DateTime.now());
+    _bsYear = bs.year;
+    _bsMonth = bs.month;
+    _bsDay = bs.day;
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppSettingsScope.stringsOf(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Center(
+        Center(
           child: Text(
-            'मिति रूपान्तरण',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            strings.dateConverter,
+            style: AppTextStyles.title(context).copyWith(fontSize: 22),
           ),
         ),
         const SizedBox(height: 18),
         SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: true, label: Text('वि.सं. → ई.सं.')),
-            ButtonSegment(value: false, label: Text('ई.सं. → वि.सं.')),
+          segments: [
+            ButtonSegment(value: true, label: Text(strings.adToBs)),
+            ButtonSegment(value: false, label: Text(strings.bsToAd)),
           ],
-          selected: {_bsToAd},
+          selected: {_adToBs},
           onSelectionChanged: (value) => setState(() {
-            _bsToAd = value.first;
+            _adToBs = value.first;
             _result = null;
             _message = null;
           }),
         ),
         const SizedBox(height: 14),
         AppCard(
-          child: _bsToAd
-              ? _BsInput(
-                  repository: widget.repository,
+          child: _adToBs
+              ? _AdPicker(date: _adDate, onPick: _pickAdDate)
+              : _BsPicker(
+                  year: _bsYear,
                   month: _bsMonth,
                   day: _bsDay,
-                  onMonth: (value) => setState(() => _bsMonth = value),
-                  onDay: (value) => setState(() => _bsDay = value),
-                )
-              : _AdInput(year: _adYear, month: _adMonth, day: _adDay),
+                  service: _dateService,
+                  onChanged: _setBsDate,
+                ),
         ),
         const SizedBox(height: 14),
-        FilledButton(
-          onPressed: _convert,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: _convert,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  strings.convert,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
             ),
-          ),
-          child: const Text(
-            'रूपान्तरण गर्नुहोस्',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
+            const SizedBox(width: 10),
+            OutlinedButton(
+              onPressed: _clear,
+              style: OutlinedButton.styleFrom(minimumSize: const Size(96, 52)),
+              child: Text(strings.clear),
+            ),
+          ],
         ),
         const SizedBox(height: 18),
-        if (_result != null)
-          AppCard(
-            color: const Color(0xFFFFF1F2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'परिणाम',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'वि.सं. मिति',
-                  style: const TextStyle(color: Colors.black54),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  bsDate(_result!),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'ई.सं. मिति',
-                  style: const TextStyle(color: Colors.black54),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  fullEnglishDate(_result!.adDate),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          )
+        if (_result?.isSuccess == true)
+          _ResultCard(result: _result!)
         else if (_message != null)
           AppCard(
-            child: Text(
-              _message!,
-              style: const TextStyle(color: Colors.black54),
-            ),
+            child: Text(_message!, style: AppTextStyles.subtitle(context)),
           ),
-        const SizedBox(height: 12),
-        const Text(
-          'नोट: यो रूपान्तरण नमुना डेटा २०८३ भित्र मात्र उपलब्ध छ।',
-          style: TextStyle(color: Colors.black54),
-        ),
       ],
     );
   }
 
+  Future<void> _pickAdDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _adDate ?? DateTime.now(),
+      firstDate: DateTime(1913, 4, 13),
+      lastDate: DateTime(2193, 12, 31),
+    );
+    if (picked != null) {
+      setState(() {
+        _adDate = picked;
+        _result = null;
+        _message = null;
+      });
+    }
+  }
+
+  void _setBsDate(int year, int month, int day) {
+    setState(() {
+      _bsYear = year;
+      _bsMonth = month;
+      _bsDay = day;
+      _result = null;
+      _message = null;
+    });
+  }
+
   void _convert() {
     setState(() {
-      if (_bsToAd) {
-        _result = widget.repository.fromBs(
-          widget.repository.year,
-          _bsMonth,
-          _bsDay,
-        );
-      } else {
-        final year = int.tryParse(_adYear.text.trim());
-        final month = int.tryParse(_adMonth.text.trim());
-        final day = int.tryParse(_adDay.text.trim());
-        if (year == null || month == null || day == null) {
+      if (_adToBs) {
+        if (_adDate == null) {
+          _message = 'Empty fields are not allowed.';
           _result = null;
-          _message = 'कृपया सही ई.सं. मिति हाल्नुहोस्।';
           return;
         }
-        _result = widget.repository.fromAd(DateTime(year, month, day));
+        _result = _dateService.convertAdToBs(
+          year: _adDate!.year,
+          month: _adDate!.month,
+          day: _adDate!.day,
+        );
+      } else {
+        _result = _dateService.convertBsToAd(
+          year: _bsYear,
+          month: _bsMonth,
+          day: _bsDay,
+        );
       }
-      _message = _result == null ? 'यो मिति नमुना डेटा भित्र भेटिएन।' : null;
+      _message = _result!.isSuccess ? null : _result!.error;
+    });
+  }
+
+  void _clear() {
+    setState(() {
+      _result = null;
+      _message = null;
+      _adDate = null;
     });
   }
 }
 
-class _BsInput extends StatelessWidget {
-  const _BsInput({
-    required this.repository,
-    required this.month,
-    required this.day,
-    required this.onMonth,
-    required this.onDay,
-  });
+class _AdPicker extends StatelessWidget {
+  const _AdPicker({required this.date, required this.onPick});
 
-  final PatroRepository repository;
-  final int month;
-  final int day;
-  final ValueChanged<int> onMonth;
-  final ValueChanged<int> onDay;
+  final DateTime? date;
+  final VoidCallback onPick;
 
   @override
   Widget build(BuildContext context) {
-    final currentMonth = repository.monthByNumber(month);
-    final dayValue = day.clamp(1, currentMonth.days);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text('English date', style: AppTextStyles.body(context)),
+      subtitle: Text(
+        date == null ? 'Select a date' : englishDate(date!),
+        style: AppTextStyles.subtitle(context),
+      ),
+      trailing: const Icon(Icons.calendar_month),
+      onTap: onPick,
+    );
+  }
+}
+
+class _BsPicker extends StatelessWidget {
+  const _BsPicker({
+    required this.year,
+    required this.month,
+    required this.day,
+    required this.service,
+    required this.onChanged,
+  });
+
+  final int year;
+  final int month;
+  final int day;
+  final NepaliDateService service;
+  final void Function(int year, int month, int day) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxDay = service.daysInMonth(year, month);
+    final safeDay = day.clamp(1, maxDay);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'वि.सं. मिति छान्नुहोस्',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        Text(
+          'Nepali date',
+          style: AppTextStyles.body(
+            context,
+          ).copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
-        _ReadOnlyField(nepaliNumber(repository.year)),
+        DropdownButtonFormField<int>(
+          initialValue: year,
+          decoration: const InputDecoration(
+            labelText: 'Year',
+            border: OutlineInputBorder(),
+          ),
+          items: List.generate(282, (index) => 1969 + index)
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(value.toString()),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value != null) onChanged(value, month, safeDay);
+          },
+        ),
         const SizedBox(height: 10),
         DropdownButtonFormField<int>(
           initialValue: month,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          items: repository.months
+          decoration: const InputDecoration(
+            labelText: 'Month',
+            border: OutlineInputBorder(),
+          ),
+          items: List.generate(12, (index) => index + 1)
               .map(
-                (item) => DropdownMenuItem(
-                  value: item.number,
-                  child: Text(item.nepaliName),
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text('${nepaliMonthNameFor(value)} ($value)'),
                 ),
               )
               .toList(),
           onChanged: (value) {
             if (value == null) return;
-            onMonth(value);
-            final nextMax = repository.monthByNumber(value).days;
-            if (day > nextMax) onDay(nextMax);
+            final nextMax = service.daysInMonth(year, value);
+            onChanged(year, value, safeDay.clamp(1, nextMax));
           },
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<int>(
-          initialValue: dayValue,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          items: List.generate(currentMonth.days, (index) => index + 1)
+          initialValue: safeDay,
+          decoration: const InputDecoration(
+            labelText: 'Day',
+            border: OutlineInputBorder(),
+          ),
+          items: List.generate(maxDay, (index) => index + 1)
               .map(
-                (item) => DropdownMenuItem(
-                  value: item,
-                  child: Text(nepaliNumber(item)),
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(value.toString()),
                 ),
               )
               .toList(),
           onChanged: (value) {
-            if (value != null) onDay(value);
+            if (value != null) onChanged(year, month, value);
           },
         ),
       ],
@@ -229,64 +283,65 @@ class _BsInput extends StatelessWidget {
   }
 }
 
-class _AdInput extends StatelessWidget {
-  const _AdInput({required this.year, required this.month, required this.day});
+class _ResultCard extends StatelessWidget {
+  const _ResultCard({required this.result});
 
-  final TextEditingController year;
-  final TextEditingController month;
-  final TextEditingController day;
+  final DateConversionResult result;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'ई.सं. मिति हाल्नुहोस्',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: year,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Year',
-            border: OutlineInputBorder(),
+    final bs = result.bsDate!;
+    final ad = result.adDate!;
+    return AppCard(
+      color: Theme.of(context).colorScheme.primaryContainer.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.24 : 0.45,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Result',
+            style: AppTextStyles.title(context).copyWith(fontSize: 18),
           ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: month,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Month',
-            border: OutlineInputBorder(),
+          const SizedBox(height: 14),
+          _Row(
+            label: 'Nepali date',
+            value: '${nepaliMonthNameFor(bs.month)} ${bs.day}, ${bs.year}',
           ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: day,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Day',
-            border: OutlineInputBorder(),
-          ),
-        ),
-      ],
+          _Row(label: 'English date', value: englishDate(ad)),
+          _Row(label: 'Day name', value: englishWeekday(ad)),
+          _Row(label: 'Month name', value: nepaliMonthNameFor(bs.month)),
+        ],
+      ),
     );
   }
 }
 
-class _ReadOnlyField extends StatelessWidget {
-  const _ReadOnlyField(this.text);
+class _Row extends StatelessWidget {
+  const _Row({required this.label, required this.value});
 
-  final String text;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: const InputDecoration(border: OutlineInputBorder()),
-      child: Text(text, style: const TextStyle(fontSize: 16)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: AppTextStyles.subtitle(context))),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.body(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

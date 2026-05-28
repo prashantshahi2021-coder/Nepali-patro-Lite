@@ -229,6 +229,7 @@ class CalendarRepository {
     final selectedYear = bsYear ?? year;
     return calendarsByYear[selectedYear]
             ?.where((date) => date.bsMonth == monthNumber)
+            .map(_withHoliday)
             .toList() ??
         const [];
   }
@@ -248,7 +249,7 @@ class CalendarRepository {
     final key = dateKey(adDate);
     for (final dates in calendarsByYear.values) {
       for (final date in dates) {
-        if (date.adKey == key) return date;
+        if (date.adKey == key) return _withHoliday(date);
       }
     }
     return null;
@@ -258,9 +259,34 @@ class CalendarRepository {
     final key =
         '$bsYear-${bsMonth.toString().padLeft(2, '0')}-${bsDay.toString().padLeft(2, '0')}';
     for (final date in calendarsByYear[bsYear] ?? const <PatroDate>[]) {
-      if (date.bsKey == key) return date;
+      if (date.bsKey == key) return _withHoliday(date);
     }
     return null;
+  }
+
+  PatroDate _withHoliday(PatroDate date) {
+    final holidays = (holidaysByYear[date.bsYear] ?? const <HolidayItem>[])
+        .where(
+          (holiday) =>
+              holiday.month == date.bsMonth && holiday.day == date.bsDay,
+        )
+        .toList();
+    if (holidays.isEmpty) return date;
+
+    final names = holidays.map((holiday) => holiday.title).join(' / ');
+    return PatroDate(
+      bsYear: date.bsYear,
+      bsMonth: date.bsMonth,
+      bsDay: date.bsDay,
+      adDate: date.adDate,
+      weekday: date.weekday,
+      isToday: date.isToday,
+      isHoliday: true,
+      holidayName: names,
+      eventName: date.eventName ?? names,
+      notes: date.notes,
+      source: holidays.first.source,
+    );
   }
 }
 

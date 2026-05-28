@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_strings.dart';
 import '../services/calendar_update_service.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
+import 'settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key, required this.repository});
@@ -12,13 +15,14 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final version = repository.version;
+    final strings = AppSettingsScope.stringsOf(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Center(
+        Center(
           child: Text(
-            'More',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            strings.more,
+            style: AppTextStyles.title(context).copyWith(fontSize: 22),
           ),
         ),
         const SizedBox(height: 18),
@@ -32,33 +36,32 @@ class MoreScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.calendar_month,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   size: 36,
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Nepali Patro Lite',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.title(
+                        context,
+                      ).copyWith(fontSize: 20, fontWeight: FontWeight.w800),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Simple Nepali Calendar',
-                      style: TextStyle(color: Colors.black54),
+                      style: AppTextStyles.subtitle(context),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
                       'Version 1.0.0',
-                      style: TextStyle(color: Colors.black54),
+                      style: AppTextStyles.subtitle(context),
                     ),
                   ],
                 ),
@@ -71,9 +74,9 @@ class MoreScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Calendar Data',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style: AppTextStyles.title(context).copyWith(fontSize: 18),
               ),
               const SizedBox(height: 12),
               _DataRow('Calendar Data Version', version.calendarDataVersion),
@@ -84,7 +87,7 @@ class MoreScreen extends StatelessWidget {
               if (repository.hasValidationErrors) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Calendar data needs update',
+                  strings.calendarDataNeedsUpdate,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w800,
@@ -93,7 +96,7 @@ class MoreScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   repository.validationErrors.take(3).join('\n'),
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  style: AppTextStyles.caption(context).copyWith(fontSize: 12),
                 ),
               ],
               const SizedBox(height: 12),
@@ -119,8 +122,19 @@ class MoreScreen extends StatelessWidget {
         const SizedBox(height: 18),
         AppCard(
           padding: EdgeInsets.zero,
-          child: const Column(
+          child: Column(
             children: [
+              _MoreTile(
+                icon: Icons.info_outline,
+                title: strings.settings,
+                subtitle: '${strings.languageText} / ${strings.theme}',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SettingsScreen(repository: repository),
+                  ),
+                ),
+              ),
+              _Divider(),
               _MoreTile(
                 icon: Icons.info_outline,
                 title: 'About App',
@@ -165,15 +179,15 @@ class _DataRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.black54)),
-          ),
+          Expanded(child: Text(label, style: AppTextStyles.subtitle(context))),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: AppTextStyles.body(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -187,24 +201,33 @@ class _MoreTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        ScaffoldMessenger.of(
+      title: Text(
+        title,
+        style: AppTextStyles.body(
           context,
-        ).showSnackBar(SnackBar(content: Text('$subtitle placeholder')));
-      },
+        ).copyWith(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(subtitle, style: AppTextStyles.subtitle(context)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap:
+          onTap ??
+          () {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('$subtitle placeholder')));
+          },
     );
   }
 }

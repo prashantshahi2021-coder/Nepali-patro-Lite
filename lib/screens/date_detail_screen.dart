@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/patro_date.dart';
 import '../services/patro_repository.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_card.dart';
 
 class DateDetailScreen extends StatelessWidget {
@@ -71,16 +72,19 @@ class DateDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const AppCard(
+          AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Panchang',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  style: AppTextStyles.title(context).copyWith(fontSize: 17),
                 ),
-                SizedBox(height: 12),
-                Text('Panchang data coming soon'),
+                const SizedBox(height: 12),
+                Text(
+                  'Panchang data coming soon',
+                  style: AppTextStyles.body(context),
+                ),
               ],
             ),
           ),
@@ -103,9 +107,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.black87)),
-          ),
+          Expanded(child: Text(label, style: AppTextStyles.body(context))),
           const SizedBox(width: 12),
           Flexible(
             child: Text(
@@ -114,7 +116,7 @@ class _InfoRow extends StatelessWidget {
               style: TextStyle(
                 color: accent
                     ? Theme.of(context).colorScheme.primary
-                    : Colors.black87,
+                    : Theme.of(context).colorScheme.onSurface,
                 fontWeight: accent ? FontWeight.w800 : FontWeight.w500,
               ),
             ),

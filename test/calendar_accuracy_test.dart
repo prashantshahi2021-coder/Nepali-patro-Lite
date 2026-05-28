@@ -61,6 +61,38 @@ void main() {
     );
   });
 
+  test('official 2083 MoHA holidays convert and validate', () {
+    final holidays = _loadHolidays(2083);
+    final dates = _loadCalendar(2083);
+    final service = NepaliDateService();
+    final result = CalendarValidationService(service).validate(
+      calendarsByYear: {2083: dates},
+      holidaysByYear: {2083: holidays},
+    );
+
+    expect(result.errors, isEmpty);
+    for (final holiday in holidays) {
+      expect(holiday.verified, isTrue, reason: holiday.title);
+      expect(
+        holiday.source,
+        'Government of Nepal, Ministry of Home Affairs',
+        reason: holiday.title,
+      );
+      expect(holiday.sourceUrl, isNotEmpty, reason: holiday.title);
+      expect(
+        {'national', 'province', 'community', 'gender', 'office'},
+        contains(holiday.type),
+        reason: holiday.title,
+      );
+      expect(holiday.appliesTo, isNotEmpty, reason: holiday.title);
+      expect(
+        dateKey(service.toAd(holiday.bsYear, holiday.month, holiday.day)),
+        dateKey(holiday.adDate!),
+        reason: holiday.title,
+      );
+    }
+  });
+
   test('duplicate date detection reports duplicate AD and BS dates', () {
     final dates = _loadCalendar(2083);
     final duplicate = dates.first;
@@ -87,6 +119,14 @@ List<PatroDate> _loadCalendar(int year) {
   final json = jsonDecode(file.readAsStringSync()) as List<dynamic>;
   return json
       .map((item) => PatroDate.fromJson(item as Map<String, dynamic>))
+      .toList();
+}
+
+List<HolidayItem> _loadHolidays(int year) {
+  final file = File('assets/data/holidays/${year}_holidays.json');
+  final json = jsonDecode(file.readAsStringSync()) as List<dynamic>;
+  return json
+      .map((item) => HolidayItem.fromJson(item as Map<String, dynamic>))
       .toList();
 }
 
