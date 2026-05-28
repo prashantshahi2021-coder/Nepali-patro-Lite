@@ -1,0 +1,11 @@
+{
+  "version": "2083.1.0",
+  "supported_years": [
+    2082,
+    2083
+  ],
+  "calendar_url": "https://example.com/calendar_2083.json",
+  "holidays_url": "https://example.com/holidays_2083.json",
+  "source": "Government of Nepal holiday list + verified BS/AD converter"
+  ,"last_verified": "2026-05-28"
+}
